@@ -39,6 +39,7 @@ except NameError:
     xrange = range  # Python 3
 
 
+
 def parse_args():
     """
     Parse input arguments
@@ -58,7 +59,7 @@ def parse_args():
                         help='set config keys', default=None,
                         nargs=argparse.REMAINDER)
     parser.add_argument('--load_dir', dest='load_dir',
-                        help='directory to load models', default="/srv/share/jyang375/models",
+                        help='directory to load models', default="data/models",
                         type=str)
     parser.add_argument('--cuda', dest='cuda',
                         help='whether use CUDA',
@@ -130,17 +131,20 @@ if __name__ == '__main__':
         args.imdb_name = "vg_150-50-50_minitrain"
         args.imdbval_name = "vg_150-50-50_minival"
         args.set_cfgs = ['ANCHOR_SCALES', '[4, 8, 16, 32]', 'ANCHOR_RATIOS', '[0.5,1,2]']
+    elif args.dataset == "adas":
+        args.imdb_name = "adas_2017_train"
+        args.imdbval_name = "adas_2017_test"
+        args.set_cfgs = ['ANCHOR_SCALES', '[8, 16, 32]', 'ANCHOR_RATIOS', '[0.5,1,2]', 'MAX_NUM_GT_BOXES', '20']
 
     args.cfg_file = "cfgs/{}.yml".format(args.net)
-
 
     if args.cfg_file is not None:
         cfg_from_file(args.cfg_file)
     if args.set_cfgs is not None:
         cfg_from_list(args.set_cfgs)
 
-    print('Using config:')
-    pprint.pprint(cfg)
+    #print('Using config:')
+    #pprint.pprint(cfg)
     np.random.seed(cfg.RNG_SEED)
 
     cfg.TRAIN.USE_FLIPPED = False
@@ -205,10 +209,13 @@ if __name__ == '__main__':
 
     if vis:
         thresh = 0.05
+        #thresh = 0.5
+        #fourcc = cv2.cv.FOURCC(*'XVID')
+        #vw = cv2.VideoWriter('images/output.avi', fourcc, 10.0, (640,480))
     else:
-        thresh = 0.0
+        thresh = 0.05
 
-    save_name = 'faster_rcnn_10'
+    save_name = 'fpn'
     num_images = len(imdb.image_index)
     all_boxes = [[[] for _ in xrange(num_images)]
                  for _ in xrange(imdb.num_classes)]
@@ -235,6 +242,7 @@ if __name__ == '__main__':
         num_boxes.data.resize_(data[3].size()).copy_(data[3])
 
         det_tic = time.time()
+
         rois, cls_prob, bbox_pred, \
         _, _, _, _, _ = fpn(im_data, im_info, gt_boxes, num_boxes)
 
@@ -255,6 +263,8 @@ if __name__ == '__main__':
                                  + torch.FloatTensor(cfg.TRAIN.BBOX_NORMALIZE_MEANS).cuda()
                     box_deltas = box_deltas.view(1, -1, 4 * len(imdb.classes))
 
+            # pdb.set_trace()
+
             pred_boxes = bbox_transform_inv(boxes, box_deltas, 1)
             pred_boxes = clip_boxes(pred_boxes, im_info.data, 1)
         else:
@@ -271,6 +281,7 @@ if __name__ == '__main__':
         if vis:
             im = cv2.imread(imdb.image_path_at(i))
             im2show = np.copy(im)
+
         for j in xrange(1, imdb.num_classes):
             inds = torch.nonzero(scores[:, j] > thresh).view(-1)
             # if there is det
@@ -293,7 +304,7 @@ if __name__ == '__main__':
                     keep = nms(cls_dets, cfg.TEST.NMS)
                 cls_dets = cls_dets[keep.view(-1).long()]
                 if vis:
-                    im2show = vis_detections(im2show, imdb.classes[j], cls_dets.cpu().numpy(), 0.3)
+                    im2show = vis_detections(im2show, imdb.classes[j], cls_dets.cpu().numpy(), 0.6)
                 all_boxes[j][i] = cls_dets.cpu().numpy()
             else:
                 all_boxes[j][i] = empty_array
@@ -316,14 +327,29 @@ if __name__ == '__main__':
         sys.stdout.flush()
 
         if vis:
-            cv2.imwrite('images/result%d.png' % (i), im2show)
-            pdb.set_trace()
+            basename = os.path.basename(imdb.image_path_at(i))
+            root, _ = os.path.splitext(basename)
+            cv2.imwrite('images/%s.png' % root, im2show)
+            with open('images/%s.txt' % root, 'w') as fp:
+                for j in xrange(1, imdb.num_classes):
+                    for k in range(len(all_boxes[j][i])):
+                        bbox = tuple(np.round(float(x),6) for x in all_boxes[j][i][k])
+                        row = '{0} {1} {2} {3} {4} {5}\n'.format(root,bbox[4],bbox[0],bbox[1],bbox[2],bbox[3])
+                        fp.write(row)
+
+            #im2show = cv2.resize(im2show,(224,224))
+            #pdb.set_trace()
+            #vw.write(im2show)
+            # pdb.set_trace()
             # cv2.imshow('test', im2show)
             # cv2.waitKey(0)
-
+    if vis:
+        #vw.release()
+        pass
+    
     with open(det_file, 'wb') as f:
         pickle.dump(all_boxes, f, pickle.HIGHEST_PROTOCOL)
-
+    
     print('Evaluating detections')
     imdb.evaluate_detections(all_boxes, output_dir)
 
