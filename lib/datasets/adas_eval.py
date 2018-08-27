@@ -132,6 +132,7 @@ def adas_eval(detpath,
         recs = pickle.load(f)
       except:
         recs = pickle.load(f, encoding='bytes')
+      print('Loading cached annotations from {:s}'.format(cachefile))
 
   # extract gt objects for this class
   class_recs = {}

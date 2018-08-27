@@ -293,8 +293,8 @@ class detnet(_FPN):
         self.model_path = 'data/pretrained_model/detnet59.pth'
         self.pretrained = pretrained
         self.class_agnostic = class_agnostic
-        _FPN.__init__(self, classes, class_agnostic)
         self.dout_base_model = 256
+        _FPN.__init__(self, classes, class_agnostic)
 
     def _init_modules(self):
         detnet = detnet59()

@@ -1,3 +1,4 @@
+# coding: utf-8
 # --------------------------------------------------------
 # Pytorch FPN
 # Licensed under The MIT License [see LICENSE for details]
@@ -203,7 +204,10 @@ if __name__ == '__main__':
     elif args.dataset == "adas":
         args.imdb_name = "adas_2017_train"
         args.imdbval_name = "adas_2017_test"
-        args.set_cfgs = ['ANCHOR_SCALES', '[8, 16, 32]', 'ANCHOR_RATIOS', '[0.5,1,2]', 'MAX_NUM_GT_BOXES', '20']  
+        #咦,之前一直用的这个?fuck!!
+        #args.set_cfgs = ['ANCHOR_SCALES', '[8, 16, 32]', 'ANCHOR_RATIOS', '[0.5,1,2]', 'MAX_NUM_GT_BOXES', '20']  
+        args.set_cfgs = ['FPN_ANCHOR_SCALES', '[32, 64, 128, 256, 512]', 'FPN_FEAT_STRIDES', '[4, 8, 16, 16, 16]',
+                         'MAX_NUM_GT_BOXES', '20']
 
     args.cfg_file = "cfgs/{}_ls.yml".format(args.net) if args.lscale else "cfgs/{}.yml".format(args.net)
 
@@ -289,6 +293,7 @@ if __name__ == '__main__':
 
     FPN.create_architecture()
 
+    step = 0
     lr = cfg.TRAIN.LEARNING_RATE
     lr = args.lr
     # tr_momentum = cfg.TRAIN.MOMENTUM
@@ -325,7 +330,7 @@ if __name__ == '__main__':
                 cfg.POOLING_MODE = checkpoint['pooling_mode']
             _print("loaded checkpoint %s" % (load_name), )
         else:
-            print("checkpoint {} not exist,skip".format(load_name))
+            _print("checkpoint {} not exist,skip".format(load_name))
     
     if args.mGPUs:
         FPN = nn.DataParallel(FPN)
@@ -346,8 +351,13 @@ if __name__ == '__main__':
             lr *= args.lr_decay_gamma
 
         data_iter = iter(dataloader)
-    
-        for step in range(iters_per_epoch):
+
+        if epoch == args.start_epoch:
+            start_step = args.checkpoint + 1
+        else:
+            start_step = 0
+
+        for step in range(start_step, iters_per_epoch):
             data = data_iter.next()
             im_data.data.resize_(data[0].size()).copy_(data[0])
             im_info.data.resize_(data[1].size()).copy_(data[1])
@@ -408,7 +418,7 @@ if __name__ == '__main__':
                 save_name = os.path.join(output_dir, 'fpn_{}_{}_{}.pth'.format(args.session, epoch, step))
                 save_checkpoint({
                     'session': args.session,
-                    'epoch': epoch + 1,
+                    'epoch': epoch,
                     'model': FPN.state_dict(),
                     'optimizer': optimizer.state_dict(),
                     'pooling_mode': cfg.POOLING_MODE,
