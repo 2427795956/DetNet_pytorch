@@ -201,12 +201,18 @@ class _FPN(nn.Module):
             #        is correct on different feature maps
             # rois[:, :, 1::2] /= im_info[0][1]
             # rois[:, :, 2::2] /= im_info[0][0]
-
+            
             rois = rois.view(-1, 5)
             rois_label = rois_label.view(-1).long()
             gt_assign = gt_assign.view(-1).long()
             pos_id = rois_label.nonzero().squeeze()
-            gt_assign_pos = gt_assign[pos_id]
+
+            try:
+                gt_assign_pos = gt_assign[pos_id]
+            except Exception as e:
+                print(e)
+                print(roi_data[1], roi_data[2])
+
             rois_label_pos = rois_label[pos_id]
             rois_label_pos_ids = pos_id
 

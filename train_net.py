@@ -38,6 +38,9 @@ from model.fpn.detnet_backbone import detnet
 from model.utils.summary import *
 import pdb
 
+import warnings
+warnings.filterwarnings("ignore")
+
 try:
     xrange  # Python 2
 except NameError:
@@ -107,14 +110,14 @@ def parse_args():
                         default=0.1, type=float)
 
     # set training session
-    parser.add_argument('--s', dest='session',
+    parser.add_argument('--session', dest='session',
                         help='training session',
                         default=1, type=int)
 
     # resume trained model
     parser.add_argument('--r', dest='resume',
                         help='resume checkpoint or not',
-                        default=False, type=bool)
+                        action='store_true', default=False)
     parser.add_argument('--checksession', dest='checksession',
                         help='checksession to load model',
                         default=1, type=int)
@@ -294,7 +297,6 @@ if __name__ == '__main__':
     FPN.create_architecture()
 
     step = 0
-    lr = cfg.TRAIN.LEARNING_RATE
     lr = args.lr
     # tr_momentum = cfg.TRAIN.MOMENTUM
     # tr_momentum = args.momentum
@@ -321,11 +323,10 @@ if __name__ == '__main__':
         if os.path.exists(load_name): 
             _print("loading checkpoint %s" % (load_name), )
             checkpoint = torch.load(load_name)
-            args.session = checkpoint['session']
+            #args.session = checkpoint['session']
             args.start_epoch = checkpoint['epoch']
             FPN.load_state_dict(checkpoint['model'])
             optimizer.load_state_dict(checkpoint['optimizer'])
-            lr = optimizer.param_groups[0]['lr']
             if 'pooling_mode' in checkpoint.keys():
                 cfg.POOLING_MODE = checkpoint['pooling_mode']
             _print("loaded checkpoint %s" % (load_name), )
@@ -346,7 +347,7 @@ if __name__ == '__main__':
         loss_temp = 0
         start = time.time()
 
-        if epoch % (args.lr_decay_step + 1) == 0:
+        if epoch % args.lr_decay_step == 0:
             adjust_learning_rate(optimizer, args.lr_decay_gamma)
             lr *= args.lr_decay_gamma
 

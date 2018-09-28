@@ -28,13 +28,14 @@ from PIL import Image
 from roi_data_layer.roidb import combined_roidb
 from roi_data_layer.roibatchLoader import roibatchLoader
 from model.utils.config import cfg, cfg_from_file, cfg_from_list, get_output_dir
-from model.faster_rcnn.faster_rcnn_cascade import _fasterRCNN
+from model.fpn.fpn import _FPN
 from model.rpn.bbox_transform import clip_boxes
 from model.nms.nms_wrapper import nms
 from model.rpn.bbox_transform import bbox_transform_inv
 from model.utils.net_utils import save_net, load_net, vis_detections
 from model.utils.blob import im_list_to_blob
 import pdb
+
 
 def parse_args():
   """
@@ -43,21 +44,15 @@ def parse_args():
   parser = argparse.ArgumentParser(description='Train a Fast R-CNN network')
   parser.add_argument('--cfg', dest='cfg_file',
                       help='optional config file',
-                      default='cfgs/vgg16.yml', type=str)
-  parser.add_argument('--imdb', dest='imdb_name',
-                      help='dataset to train on',
-                      default='voc_2007_trainval', type=str)
-  parser.add_argument('--imdbval', dest='imdbval_name',
-                      help='dataset to validate on',
-                      default='voc_2007_test', type=str)
+                      default='cfgs/detnet59.yml', type=str)
   parser.add_argument('--net', dest='net',
-                      help='vgg16, res50, res101, res152',
-                      default='vgg16', type=str)
+                      help='detnet59',
+                      default='detnet59', type=str)
   parser.add_argument('--set', dest='set_cfgs',
                       help='set config keys', default=None,
                       nargs=argparse.REMAINDER)
   parser.add_argument('--load_dir', dest='load_dir',
-                      help='directory to load models', default="/srv/share/jyang375/models",
+                      help='directory to load models', default="data/models",
                       nargs=argparse.REMAINDER)
   parser.add_argument('--image_dir', dest='image_dir',
                       help='directory to load images', default="data/images",
@@ -67,10 +62,10 @@ def parse_args():
                       default=1, type=int)
   parser.add_argument('--checksession', dest='checksession',
                       help='checksession to load model',
-                      default=4, type=int)
+                      default=1, type=int)
   parser.add_argument('--checkepoch', dest='checkepoch',
                       help='checkepoch to load network',
-                      default=6, type=int)
+                      default=1, type=int)
   parser.add_argument('--checkpoint', dest='checkpoint',
                       help='checkpoint to load network',
                       default=10000, type=int)
@@ -139,19 +134,14 @@ if __name__ == '__main__':
   if not os.path.exists(input_dir):
     raise Exception('There is no input directory for loading network')
   load_name = os.path.join(input_dir,
-    'faster_rcnn_{}_{}_{}.pth'.format(args.checksession, args.checkepoch, args.checkpoint))
+    'fpn_{}_{}_{}.pth'.format(args.checksession, args.checkepoch, args.checkpoint))
 
 
-  classes = np.asarray(['__background__',
-                       'aeroplane', 'bicycle', 'bird', 'boat',
-                       'bottle', 'bus', 'car', 'cat', 'chair',
-                       'cow', 'diningtable', 'dog', 'horse',
-                       'motorbike', 'person', 'pottedplant',
-                       'sheep', 'sofa', 'train', 'tvmonitor'])
+  classes = np.asarray(['__background__', 'car'])
 
-  fasterRCNN = _fasterRCNN(args.net, classes)
+  fpn = _FPN(args.net, classes)
   checkpoint = torch.load(load_name)
-  fasterRCNN.load_state_dict(checkpoint['model'])
+  fpn.load_state_dict(checkpoint['model'])
   print('load model successfully!')
 
   # pdb.set_trace()
@@ -181,9 +171,9 @@ if __name__ == '__main__':
     cfg.CUDA = True
 
   if args.ngpu > 0:
-    fasterRCNN.cuda()
+    fpn.cuda()
 
-  fasterRCNN.eval()
+  fpn.eval()
 
   start = time.time()
   max_per_image = 100
@@ -225,7 +215,7 @@ if __name__ == '__main__':
 
       det_tic = time.time()
       rois, cls_prob, bbox_pred, rpn_loss, rcnn_loss = \
-          fasterRCNN(im_data, im_info, gt_boxes, num_boxes)
+          _FPN(im_data, im_info, gt_boxes, num_boxes)
 
       scores = cls_prob.data
       boxes = rois[:, :, 1:5] / im_scales[0]
@@ -255,7 +245,7 @@ if __name__ == '__main__':
       if vis:
           im2show = np.copy(im)
 
-      for j in xrange(1, 21):
+      for j in xrange(1, len(classes)):
           inds = np.where(scores[:, j] > thresh)[0]
           cls_scores = scores[inds, j]
           cls_boxes = pred_boxes[inds, :]
@@ -272,7 +262,7 @@ if __name__ == '__main__':
       sys.stdout.write('im_detect: {:d}/{:d} {:.3f}s {:.3f}s   \r' \
           .format(i + 1, num_images, detect_time, nms_time))
       sys.stdout.flush()
-
+      
       if vis:
           # cv2.imshow('test', im2show)
           # cv2.waitKey(0)

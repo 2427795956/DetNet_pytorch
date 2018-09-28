@@ -38,7 +38,6 @@ from model.utils.net_utils import save_net, load_net, vis_detections
 from model.utils.blob import prep_im_for_blob,im_list_to_blob
 import pdb
 from model.fpn.detnet_backbone import detnet
-from datetime import datetime as dt
 
 import warnings
 warnings.filterwarnings("ignore")
@@ -67,6 +66,9 @@ def parse_args():
   parser.add_argument('--cuda', dest='cuda',
                       help='whether use CUDA',
                       action='store_true')
+  parser.add_argument('--video_file', dest='video_file',
+                      help='video file',default='', 
+                      type=str)
   parser.add_argument('--image_dir', dest='image_dir',
                       help='directory to load images', default="data/images",
                       type=str)  
@@ -85,9 +87,6 @@ def parse_args():
   parser.add_argument('--checkpoint', dest='checkpoint',
                       help='checkpoint to load network',
                       default=10000, type=int)
-  parser.add_argument('--thresh', dest='thresh',
-                      help='confidence thresh',
-                      default=0, type=float)
 
   args = parser.parse_args()
   return args
@@ -95,18 +94,6 @@ def parse_args():
 lr = cfg.TRAIN.LEARNING_RATE
 momentum = cfg.TRAIN.MOMENTUM
 weight_decay = cfg.TRAIN.WEIGHT_DECAY
-
-'''
-def recursive_get_images(data_dir, pattern = r'\.jpg$'):
-    rootdir = os.path.abspath(data_dir)
-    for root, dirs, files in os.walk(rootdir):
-        #print(root, dirs, files)
-        for f in files:
-            if re.search(pattern, f, re.I):
-                absfn = os.path.join(root, f)
-                #print('new file %s' % absfn)
-                yield absfn
-'''
 
 def get_image_blob(im):
   """Converts an image into a network input.
@@ -201,14 +188,19 @@ if __name__ == '__main__':
   fpn.eval()
 
   max_per_image = 100
-  thresh = 0.5 if args.thresh == 0 else args.thresh
+  thresh = 0.05
   vis = True
-  
-  image_files = glob.glob(os.path.join(args.image_dir, '*.jpg'))
-  num_images = len(image_files)
-  for i in range(num_images):
-      image_file = image_files[i]
-      im = cv2.imread(image_file)
+
+  vc = cv2.VideoCapture()
+  if not vc.open(args.video_file):
+      raise Exception('open video file {} failed'.format(args.video_file))
+  i = 0
+  while True: 
+      i += 1
+      _, im = vc.read()
+      if im is None:
+          break
+      
       blobs, im_scales = get_image_blob(im)
       assert len(im_scales) == 1, "Only single-image batch implemented"
       im_blob = blobs
@@ -265,7 +257,7 @@ if __name__ == '__main__':
       if vis:
           im2show = np.copy(im)
 
-      sys.stdout.write('im_detect: {:d}/{:d} {:.3f}s   \r'.format(i, num_images, detect_time))
+      sys.stdout.write('im_detect: {:d} {:.3f}s   \r'.format(i, detect_time))
       sys.stdout.flush()
 
       for j in xrange(1, len(classes)): # 0 for background
@@ -286,6 +278,7 @@ if __name__ == '__main__':
             cls_dets = cls_dets[keep.view(-1).long()] # keep shape is ?x1
             if vis: 
               # cls_dets.cpu().numpy() make tensor->numpy array
-              im2show = vis_detections(im2show, classes[j], cls_dets.cpu().numpy(), thresh)
-              drawpath = os.path.join('test', os.path.basename(image_file))
+              im2show = vis_detections(im2show, classes[j], cls_dets.cpu().numpy(), 0.3)
+              drawpath = os.path.join('images', "{}.jpg".format(i))
               cv2.imwrite(drawpath, im2show)
+  vc.release()
