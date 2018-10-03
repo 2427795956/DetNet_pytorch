@@ -78,7 +78,7 @@ class imdb(object):
 
   @property
   def cache_path(self):
-    cache_path = osp.abspath(osp.join(cfg.DATA_DIR, 'cache'))
+    cache_path = osp.abspath(osp.join(cfg.DATA_DIR, 'cache', cfg.EXP_NAME))
     if not os.path.exists(cache_path):
       os.makedirs(cache_path)
     return cache_path

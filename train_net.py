@@ -232,6 +232,14 @@ if __name__ == '__main__':
     if torch.cuda.is_available() and not args.cuda:
         print("WARNING: You have a CUDA device, so you should probably run with --cuda")
 
+    if args.exp_name is None:
+        output_dir = args.save_dir + "/" + args.net + "/" + args.dataset
+    else:
+        cfg.EXP_NAME = args.exp_name
+        output_dir = args.save_dir + "/" + args.net + "/" + args.dataset + '/' + args.exp_name
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+
     # train set
     # -- Note: Use validation set and disable the flipped to enable faster loading.
     cfg.TRAIN.USE_FLIPPED = args.flip
@@ -241,14 +249,6 @@ if __name__ == '__main__':
 
     # _print('{:d} roidb entries'.format(len(roidb)), logging)
     _print('{:d} roidb entries'.format(len(roidb)))
-
-    if args.exp_name is not None:
-        output_dir = args.save_dir + "/" + args.net + "/" + args.dataset + '/' + args.exp_name
-    else:
-        output_dir = args.save_dir + "/" + args.net + "/" + args.dataset
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
-
     sampler_batch = sampler(train_size, args.batch_size)
 
     # for k, j in enumerate(ratio_index):
@@ -364,7 +364,7 @@ if __name__ == '__main__':
             im_info.data.resize_(data[1].size()).copy_(data[1])
             gt_boxes.data.resize_(data[2].size()).copy_(data[2])
             num_boxes.data.resize_(data[3].size()).copy_(data[3])
-
+            
             FPN.zero_grad()
             # try:
             _, _, _, rpn_loss_cls, rpn_loss_box, \

@@ -150,18 +150,20 @@ if __name__ == '__main__':
     #pprint.pprint(cfg)
     np.random.seed(cfg.RNG_SEED)
 
+    if args.exp_name is None:
+        input_dir = args.load_dir + "/" + args.net + "/" + args.dataset
+    else:
+        input_dir = args.load_dir + "/" + args.net + "/" + args.dataset + '/' + args.exp_name
+        cfg.EXP_NAME = args.exp_name
+    if not os.path.exists(input_dir):
+        raise Exception('There is no input directory for loading network from ' + input_dir)
+
     cfg.TRAIN.USE_FLIPPED = False
     imdb, roidb, ratio_list, ratio_index = combined_roidb(args.imdbval_name, False)
     imdb.competition_mode(on=True)
 
     print('{:d} roidb entries'.format(len(roidb)))
 
-    if args.exp_name is not None:
-        input_dir = args.load_dir + "/" + args.net + "/" + args.dataset + '/' + args.exp_name
-    else:
-        input_dir = args.load_dir + "/" + args.net + "/" + args.dataset
-    if not os.path.exists(input_dir):
-        raise Exception('There is no input directory for loading network from ' + input_dir)
     load_name = os.path.join(input_dir,
                              'fpn_{}_{}_{}.pth'.format(args.checksession, args.checkepoch, args.checkpoint))
 
@@ -340,9 +342,9 @@ if __name__ == '__main__':
         if vis:
             basename = os.path.basename(imdb.image_path_at(i))
             root, _ = os.path.splitext(basename)
-            if not os.path.exists('images/images'):
-                os.mkdir('images/images')
-            cv2.imwrite('images/images/%s.jpg' % root, im2show)
+            if not os.path.exists('val/images'):
+                os.makedirs('val/images')
+            cv2.imwrite('val/images/%s.jpg' % root, im2show)
             '''
             with open('images/%s.txt' % root, 'w') as fp:
                 for j in xrange(1, imdb.num_classes):
@@ -353,7 +355,7 @@ if __name__ == '__main__':
             '''
             for j in xrange(1, imdb.num_classes):
                 cls = imdb.classes[j]
-                cls_dir = 'images/{}'.format(cls)
+                cls_dir = 'val/{}'.format(cls)
                 if not os.path.exists(cls_dir):
                     os.mkdir(cls_dir)
                 with open('{}/{}.txt'.format(cls_dir,root), 'w') as fp:
