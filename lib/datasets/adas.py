@@ -307,7 +307,7 @@ class adas(imdb):
             'ImageSets',
             'Main',
             self._image_set + '.txt')
-        cachedir = os.path.join(self._devkit_path, 'annotations_cache')
+        cachedir = os.path.join(self._devkit_path, 'annotations_cache', cfg.EXP_NAME)
         aps = []
 
         if not os.path.isdir(output_dir):

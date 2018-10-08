@@ -61,12 +61,13 @@ __C.TRAIN.SUMMARY_INTERVAL = 180
 # Scale to use during training (can list multiple scales)
 # The scale is the pixel size of an image's shortest side
 #__C.TRAIN.SCALES = (500,)
+#__C.TRAIN.SCALES = (720,)
 #__C.TRAIN.SCALES = (600,)
 __C.TRAIN.SCALES = (800,)
 
 # Max pixel size of the longest side of a scaled input image
-#__C.TRAIN.MAX_SIZE = 1000
-__C.TRAIN.MAX_SIZE = 1200 #no use
+__C.TRAIN.MAX_SIZE = 1000 #nouse
+#__C.TRAIN.MAX_SIZE = 1200
 
 # Trim size for input images to create minibatch
 __C.TRAIN.TRIM_HEIGHT = 600
@@ -150,6 +151,7 @@ __C.TRAIN.RPN_POST_NMS_TOP_N = 2000
 __C.TRAIN.RPN_MIN_SIZE = 8
 
 # For ADAS
+__C.EXP_NAME = ''
 __C.TRAIN.RPN_MIN_AREA = 0
 #__C.TRAIN.CLASSES = ('__background__', 'car',)
 __C.TRAIN.CLASSES = ('__background__', 'o','s','w',)
@@ -176,12 +178,11 @@ __C.TEST = edict()
 # Scale to use during testing (can NOT list multiple scales)
 # The scale is the pixel size of an image's shortest side
 #__C.TEST.SCALES = (224,)
-#__C.TEST.SCALES = (160,)
-__C.TEST.SCALES = (800,)
+__C.TEST.SCALES = (160,)
 
 # Max pixel size of the longest side of a scaled input image
-#__C.TEST.MAX_SIZE = 1000
-__C.TEST.MAX_SIZE = 1200
+__C.TEST.MAX_SIZE = 1000 # nouse
+#__C.TEST.MAX_SIZE = 1200
 
 # Overlap threshold used for non-maximum suppression (suppress boxes with
 # IoU >= this threshold)

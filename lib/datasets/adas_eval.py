@@ -1,3 +1,4 @@
+# coding: utf-8
 # --------------------------------------------------------
 # Fast/er R-CNN
 # Licensed under The MIT License [see LICENSE for details]
@@ -110,8 +111,18 @@ def adas_eval(detpath,
 
   # first load gt
   if not os.path.isdir(cachedir):
-    os.mkdir(cachedir)
+    os.makedirs(cachedir)
+  """
+  这个有点扯了,例如在我的实验中cachedir是下面这个样子的:
+  /home/zuosi/detnet_pytorch/data/ADASdevkit2017/annotations_cache
+  而imagesetfile又是下面这个样子的:
+  /home/zuosi/detnet_pytorch/data/ADASdevkit2017/ADAS2017/ImageSets/Main/test.txt
+  何必用os.path.join搞得这么复杂呢?
   cachefile = os.path.join(cachedir, '%s_annots.pkl' % imagesetfile)
+  所以我把它改了!
+  """
+  imageset = os.path.splitext(os.path.split(imagesetfile)[1])[0]
+  cachefile = os.path.join(cachedir, '%s_annots.pkl' % imageset)
   # read list of images
   with open(imagesetfile, 'r') as f:
     lines = f.readlines()

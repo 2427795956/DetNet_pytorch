@@ -189,6 +189,7 @@ if __name__ == '__main__':
 
   max_per_image = 100
   thresh = 0.05
+  vis_thresh = 0.3
   vis = True
 
   vc = cv2.VideoCapture()
@@ -278,7 +279,8 @@ if __name__ == '__main__':
             cls_dets = cls_dets[keep.view(-1).long()] # keep shape is ?x1
             if vis: 
               # cls_dets.cpu().numpy() make tensor->numpy array
-              im2show = vis_detections(im2show, classes[j], cls_dets.cpu().numpy(), 0.3)
-              drawpath = os.path.join('images', "{}.jpg".format(i))
-              cv2.imwrite(drawpath, im2show)
+              im2show = vis_detections(im2show, classes[j], cls_dets.cpu().numpy(), vis_thresh)
+              #drawpath = os.path.join('images', "{}.jpg".format(i))
+              #cv2.imwrite(drawpath, im2show)
+	      cv2.imshow('demo', im2show)
   vc.release()
