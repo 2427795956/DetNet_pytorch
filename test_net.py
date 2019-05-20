@@ -36,6 +36,7 @@ from model.nms.nms_wrapper import nms
 from model.rpn.bbox_transform import bbox_transform_inv
 from model.utils.net_utils import save_net, load_net, vis_detections
 from model.utils.blob import prep_im_for_blob,im_list_to_blob
+from model.utils.file_utils import search_file, list_file
 import pdb
 from model.fpn.detnet_backbone import detnet
 from datetime import datetime as dt
@@ -87,7 +88,7 @@ def parse_args():
                       default=10000, type=int)
   parser.add_argument('--thresh', dest='thresh',
                       help='confidence thresh',
-                      default=0, type=float)
+                      default=0.1, type=float)
 
   args = parser.parse_args()
   return args
@@ -95,18 +96,6 @@ def parse_args():
 lr = cfg.TRAIN.LEARNING_RATE
 momentum = cfg.TRAIN.MOMENTUM
 weight_decay = cfg.TRAIN.WEIGHT_DECAY
-
-'''
-def recursive_get_images(data_dir, pattern = r'\.jpg$'):
-    rootdir = os.path.abspath(data_dir)
-    for root, dirs, files in os.walk(rootdir):
-        #print(root, dirs, files)
-        for f in files:
-            if re.search(pattern, f, re.I):
-                absfn = os.path.join(root, f)
-                #print('new file %s' % absfn)
-                yield absfn
-'''
 
 def get_image_blob(im):
   """Converts an image into a network input.
@@ -204,8 +193,9 @@ if __name__ == '__main__':
   thresh = 0.5 if args.thresh == 0 else args.thresh
   vis = True
   
-  image_files = glob.glob(os.path.join(args.image_dir, '*.jpg'))
+  image_files = list_file(args.image_dir, ".jpg")
   num_images = len(image_files)
+  print('num_images:', num_images)
   for i in range(num_images):
       image_file = image_files[i]
       im = cv2.imread(image_file)
@@ -233,7 +223,7 @@ if __name__ == '__main__':
 
       scores = cls_prob.data
       boxes = rois.data[:, :, 1:5] 
-
+    
       if cfg.TEST.BBOX_REG:
             # Apply bounding-box regression deltas
             box_deltas = bbox_pred.data
@@ -269,6 +259,10 @@ if __name__ == '__main__':
       sys.stdout.flush()
 
       for j in xrange(1, len(classes)): # 0 for background
+          # for temp
+          if j != 4: #filter face
+              continue
+
           inds = torch.nonzero(scores[:,j] > thresh).view(-1) 
           # if there is det
           if inds.numel() > 0: 
@@ -286,6 +280,8 @@ if __name__ == '__main__':
             cls_dets = cls_dets[keep.view(-1).long()] # keep shape is ?x1
             if vis: 
               # cls_dets.cpu().numpy() make tensor->numpy array
-              im2show = vis_detections(im2show, classes[j], cls_dets.cpu().numpy(), thresh)
-              drawpath = os.path.join('test', os.path.basename(image_file))
-              cv2.imwrite(drawpath, im2show)
+              im2show = vis_detections(im2show, classes[j], cls_dets.cpu().numpy(), thresh, os.path.basename(image_file))
+      
+      if vis:
+        drawpath = os.path.join('test', os.path.basename(image_file))
+        cv2.imwrite(drawpath, im2show) 

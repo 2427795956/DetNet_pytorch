@@ -272,3 +272,7 @@ def vis_fp(imagepath, fpbbs):
             x_lt,y_lt,x_rb,y_rb = [int(e) for e in bb[0:4]]
             cv2.rectangle(img, (x_lt,y_lt), (x_rb,y_rb), (0,255,0), 1)
         cv2.imwrite(os.path.join('fps', image_name), img)
+
+
+if __name__ == "__main__":
+    pass

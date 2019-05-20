@@ -1,1 +1,1 @@
-config_adas_mc.py
+config_tired_oswc_s600.py

@@ -18,6 +18,7 @@ from datetime import datetime as dt
 标签,类型
 脸,     c
 手机,   f
+手机,   p
 手机+手,w
 烟,     q
 烟+手,  s
@@ -49,13 +50,12 @@ G_LABEL_MAP = {
         's':'q',
         'o':'q',
     },
-    'adas_tired': {
-        'ignore': ['c'],
+    'adas_dms': {
+        'ignore': ['u','q'],
         'multi_class': True,
         'p': 'w',
         'f': 'w',
-        'q': 's',
-        'g': 'o',
+        'l': 'c',
     }
 }
 
@@ -199,7 +199,7 @@ def main(input_config):
 
     datadict = config.data
   
-    c = Adas2XML("ADAS2017", "adas", config.store_path)
+    c = Adas2XML("ADAS2017", "adas_dms", config.store_path)
 
     for key, data in datadict.items():
         if len(data['image_dirs']) == 0:

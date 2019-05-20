@@ -32,6 +32,7 @@ from model.utils.net_utils import vis_detections
 from model.fpn.detnet_backbone import detnet
 
 import pdb
+import datetime
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -241,6 +242,7 @@ if __name__ == '__main__':
 
     fpn.eval()
     empty_array = np.transpose(np.array([[], [], [], [], []]), (1, 0))
+    ts = datetime.datetime.now().strftime('%m%d%H%M')
     for i in range(num_images):
         data = data_iter.next()
         im_data.data.resize_(data[0].size()).copy_(data[0])
@@ -334,7 +336,11 @@ if __name__ == '__main__':
 
         misc_toc = time.time()
         nms_time = misc_toc - misc_tic
-
+        
+        '''
+        if i%1000 == 0:
+            print('im_detect: {:d}/{:d} {:.3f}s {:.3f}s'.format(i, num_images, detect_time, nms_time))
+        '''
         sys.stdout.write('im_detect: {:d}/{:d} {:.3f}s {:.3f}s   \r' \
                          .format(i + 1, num_images, detect_time, nms_time))
         sys.stdout.flush()
@@ -342,9 +348,10 @@ if __name__ == '__main__':
         if vis:
             basename = os.path.basename(imdb.image_path_at(i))
             root, _ = os.path.splitext(basename)
-            if not os.path.exists('val/images'):
-                os.makedirs('val/images')
-            cv2.imwrite('val/images/%s.jpg' % root, im2show)
+            images_dir = 'val/{}/images'.format(ts)
+            if not os.path.exists(images_dir):
+                os.makedirs(images_dir)
+            cv2.imwrite('{}/{}.jpg'.format(images_dir, root), im2show)
             '''
             with open('images/%s.txt' % root, 'w') as fp:
                 for j in xrange(1, imdb.num_classes):
@@ -355,25 +362,28 @@ if __name__ == '__main__':
             '''
             for j in xrange(1, imdb.num_classes):
                 cls = imdb.classes[j]
-                cls_dir = 'val/{}'.format(cls)
+                cls_dir = 'val/{}/{}'.format(ts, cls)
                 if not os.path.exists(cls_dir):
-                    os.mkdir(cls_dir)
+                    os.makedirs(cls_dir)
                 with open('{}/{}.txt'.format(cls_dir,root), 'w') as fp:
                     for k in range(len(all_boxes[j][i])):
                         bbox = tuple(np.round(float(x),6) for x in all_boxes[j][i][k])
                         row = '{0} {1} {2} {3} {4} {5} {6}\n'.format(root,bbox[4],bbox[0],bbox[1],bbox[2],bbox[3], cls)
                         fp.write(row)
 
-            #im2show = cv2.resize(im2show,(224,224))
-            #pdb.set_trace()
-            #vw.write(im2show)
-            # pdb.set_trace()
-            # cv2.imshow('test', im2show)
-            # cv2.waitKey(0)
-    if vis:
-        #vw.release()
-        pass
-    
+        basename = os.path.basename(imdb.image_path_at(i))
+        root, _ = os.path.splitext(basename)
+        for j in xrange(1, imdb.num_classes):
+            cls = imdb.classes[j]
+            cls_dir = 'val/{}/{}'.format(ts, cls)
+            if not os.path.exists(cls_dir):
+                os.makedirs(cls_dir)
+            with open('{}/{}.txt'.format(cls_dir,root), 'w') as fp:
+                for k in range(len(all_boxes[j][i])):
+                    bbox = tuple(np.round(float(x),6) for x in all_boxes[j][i][k])
+                    row = '{0} {1} {2} {3} {4} {5} {6}\n'.format(root,bbox[4],bbox[0],bbox[1],bbox[2],bbox[3], cls)
+                    fp.write(row)
+
     with open(det_file, 'wb') as f:
         pickle.dump(all_boxes, f, pickle.HIGHEST_PROTOCOL)
     

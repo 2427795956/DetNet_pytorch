@@ -21,7 +21,6 @@ ROOT_DIR = osp.join(osp.dirname(__file__), '..', '..')
 
 class imdb(object):
   """Image database."""
-
   def __init__(self, name, classes=None):
     self._name = name
     self._num_classes = 0

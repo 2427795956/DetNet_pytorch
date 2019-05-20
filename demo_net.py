@@ -189,12 +189,13 @@ if __name__ == '__main__':
 
   max_per_image = 100
   thresh = 0.05
-  vis_thresh = 0.3
+  vis_thresh = 0.8
   vis = True
+  
+  if not os.path.exists(args.video_file):
+      raise Exception("video %s not exist".format(args.video_file))
 
-  vc = cv2.VideoCapture()
-  if not vc.open(args.video_file):
-      raise Exception('open video file {} failed'.format(args.video_file))
+  vc = cv2.VideoCapture(args.video_file)
   i = 0
   while True: 
       i += 1
@@ -282,5 +283,8 @@ if __name__ == '__main__':
               im2show = vis_detections(im2show, classes[j], cls_dets.cpu().numpy(), vis_thresh)
               #drawpath = os.path.join('images', "{}.jpg".format(i))
               #cv2.imwrite(drawpath, im2show)
-	      cv2.imshow('demo', im2show)
+      cv2.imshow('demo', im2show)
+      if (cv2.waitKey(25) & 0xFF) == ord('q'):
+          break
   vc.release()
+  cv2.destroyAllWindows()

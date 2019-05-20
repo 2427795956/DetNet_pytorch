@@ -51,15 +51,21 @@ def clip_gradient(model, clip_norm):
         if p.requires_grad:
             p.grad.mul_(norm)
 
-def vis_detections(im, class_name, dets, thresh=0.8):
+def vis_detections(im, class_name, dets, thresh=0.8, img_name=None):
     """Visual debugging of detections."""
     for i in range(np.minimum(10, dets.shape[0])):
         bbox = tuple(int(np.round(x)) for x in dets[i, :4])
         score = dets[i, -1]
         if score > thresh:
             cv2.rectangle(im, bbox[0:2], bbox[2:4], (0, 204, 0), 1)
-            cv2.putText(im, '%s: %.3f' % (class_name, score), (bbox[0], bbox[1] + 15), cv2.FONT_HERSHEY_PLAIN,
+            cv2.putText(im, '%s: %.3f' % (class_name, score), (bbox[0], bbox[1] + 15), 
+                        cv2.FONT_HERSHEY_PLAIN,
                         1.0, (0, 0, 255), thickness=1)
+            
+            if img_name is not None:
+                line = "{:s} {:s} {:.3f} {:.3f} {:.3f} {:.3f} {:.3f}".format(\
+                 img_name, class_name, score, bbox[0], bbox[1], bbox[2], bbox[3])
+                print(line)
     return im
 
 # Borrow from matterport mask R-CNN implementation

@@ -1,3 +1,4 @@
+# coding:utf-8
 # --------------------------------------------------------
 # Fast R-CNN
 # Copyright (c) 2015 Microsoft
@@ -32,8 +33,11 @@ def im_list_to_blob(ims):
     return blob
 
 def prep_im_for_blob(im, pixel_means, pixel_stds, target_size, max_size):
-    """Mean subtract and scale an image for use in a blob."""
-    
+    """Mean subtract and scale an image for use in a blob.
+    对于训练数据减去数据集的均值,然后除以它的标准差,当然这里
+    实际上已经把均值和方差已经固定写在配置文件中了,并不是根据
+    你的真实数据计算得到的" 
+    """
     im = im.astype(np.float32, copy=False)
     im /= 255.0
     im -= pixel_means
